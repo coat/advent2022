@@ -3,18 +3,23 @@ ETX                 equ  4
 CAL_TOTAL_BYTES     equ  4    ; individual calorie entries seem to be under 16-bit, but 
                               ; the totals can exeed that - 32-bit (4 bytes) seems plenty
 
-MOST_CALS           equ  $c000                         ; current highest calorie total
-ELF_TOTAL           equ  MOST_CALS + CAL_TOTAL_BYTES   ; temp space to hold current elf's total calories
+MOST_CALS           equ  $c000                              ; current highest calorie totals
+ELF_TOTAL           equ  MOST_CALS + (CAL_TOTAL_BYTES * 3) ; temp space to hold current elf's
+                                                            ; total calories
 
 start_day:
-     ld   hl,ascii_calories   ; load the address of where our input starts
      ld   de,0
      ld   bc,0
 
-     ld   (ELF_TOTAL),bc      ; ensure memory is zeroed out
-     ld   (ELF_TOTAL + 2),bc
-     ld   (MOST_CALS),bc
-     ld   (MOST_CALS + 2),bc
+     ; ensure memory is zeroed out
+     ld   b,ELF_TOTAL + CAL_TOTAL_BYTES - MOST_CALS
+     ld   hl,MOST_CALS
+zero_loop:
+     ld   (hl),0
+     inc  hl
+     djnz zero_loop
+
+     ld   hl,ascii_calories   ; load the address of where our input starts
 
 next_char:
      ld   a,(hl)              ; get the first ascii char
@@ -80,6 +85,9 @@ calc_elf_total:
      ld   hl,ELF_TOTAL + 3    ; our 32-bit numbers are stored little-endian, so start with the last byte
      ld   b,CAL_TOTAL_BYTES   ; we are going to loop through each byte and compare
 
+     ld   c,3
+top_compare_loop:
+     
 compare_loop:
      ld   a,(de)              
      cp   (hl)
